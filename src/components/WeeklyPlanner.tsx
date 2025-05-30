@@ -9,6 +9,7 @@ import { getAllTaskIds } from '@/data/routineData';
 import DaySchedule from './DaySchedule';
 import ResetButton from './ResetButton';
 import Clock from './Clock';
+import StudyRoadmap from './StudyRoadmap';
 
 const WeeklyPlanner: React.FC<WeeklyPlannerProps> = ({ routine }) => {
   const { storedValue: completedTasks, setValue: setCompletedTasks } = useLocalStorage<TaskCompletionState>(
@@ -142,6 +143,9 @@ const WeeklyPlanner: React.FC<WeeklyPlannerProps> = ({ routine }) => {
           </div>
         </div>
       </div>
+
+      {/* Study Roadmap Section */}
+      <StudyRoadmap />
 
       {/* Weekly Schedule Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">

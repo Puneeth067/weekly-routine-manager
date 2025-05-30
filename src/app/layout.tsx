@@ -18,8 +18,8 @@ export const metadata: Metadata = {
   themeColor: '#3b82f6',
   manifest: '/manifest.json',
   icons: {
-    icon: '/favicon.ico',
-    apple: '/apple-touch-icon.png',
+    icon: '/icon.png',
+    apple: '/icon.png',
   },
   openGraph: {
     title: 'Weekly Routine Manager',
