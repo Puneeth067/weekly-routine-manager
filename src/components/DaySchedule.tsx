@@ -57,7 +57,7 @@ const DaySchedule: React.FC<DayScheduleProps> = ({
 
       {/* Tasks List */}
       <div className="p-4 space-y-2 max-h-96 overflow-y-auto">
-        {tasks.map((task, index) => {
+        {tasks.map((task) => {
           const isCompleted = completedTasks[task.id];
           
           return (

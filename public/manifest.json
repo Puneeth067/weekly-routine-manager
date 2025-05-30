@@ -1,0 +1,16 @@
+{
+  "name": "Weekly Routine Manager",
+  "short_name": "Routine Manager",
+  "description": "Manage and track your weekly routine with automatic resets",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3b82f6",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "any",
+      "type": "image/x-icon"
+    }
+  ]
+}

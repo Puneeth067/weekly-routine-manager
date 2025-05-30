@@ -2,208 +2,168 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Calendar, Trophy, Target, TrendingUp } from 'lucide-react';
 import { WeeklyPlannerProps, TaskCompletionState, WeekDay } from '@/types';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
-import { getCurrentDay, isTimeForWeeklyReset, getNextResetTime, getWeekProgress } from '@/utils/dateUtils';
+import { getCurrentDay, isTimeForWeeklyReset, getWeekProgress } from '@/utils/dateUtils';
 import { getAllTaskIds } from '@/data/routineData';
 import DaySchedule from './DaySchedule';
 import ResetButton from './ResetButton';
 import Clock from './Clock';
 
 const WeeklyPlanner: React.FC<WeeklyPlannerProps> = ({ routine }) => {
-  const { value: completedTasks, setValue: setCompletedTasks } = useLocalStorage<TaskCompletionState>('weeklyRoutineProgress', {});
-  const { value: lastResetCheck, setValue: setLastResetCheck } = useLocalStorage<string>('lastResetCheck', '');
-  const [isResetting, setIsResetting] = useState(false);
+  const { storedValue: completedTasks, setValue: setCompletedTasks } = useLocalStorage<TaskCompletionState>(
+    'weekly-routine-completed-tasks',
+    {}
+  );
+
+  const { storedValue: lastResetDate, setValue: setLastResetDate } = useLocalStorage<string>(
+    'weekly-routine-last-reset',
+    ''
+  );
+
+  const [currentDay, setCurrentDay] = useState<WeekDay>('Monday');
   const [weekProgress, setWeekProgress] = useState(0);
+  const [isResetting, setIsResetting] = useState(false);
 
-  const currentDay = getCurrentDay();
-  const allTaskIds = getAllTaskIds();
-  const totalTasks = allTaskIds.length;
-  const completedCount = allTaskIds.filter(id => completedTasks[id]).length;
-  const overallProgress = totalTasks > 0 ? (completedCount / totalTasks) * 100 : 0;
-
-  // Auto-reset functionality
-  const checkForWeeklyReset = useCallback(() => {
-    const now = new Date().toISOString();
-    const today = now.split('T')[0]; // Get date part only
-    
-    if (isTimeForWeeklyReset() && lastResetCheck !== today) {
-      console.log('Auto-resetting weekly routine...');
-      setCompletedTasks({});
-      setLastResetCheck(today);
-    }
-  }, [lastResetCheck, setCompletedTasks, setLastResetCheck]);
-
-  // Update week progress
+  // Update current day and week progress
   useEffect(() => {
-    const updateProgress = () => {
+    const updateDayAndProgress = () => {
+      setCurrentDay(getCurrentDay());
       setWeekProgress(getWeekProgress());
     };
 
-    updateProgress();
-    const interval = setInterval(updateProgress, 60000); // Update every minute
+    updateDayAndProgress();
+    const interval = setInterval(updateDayAndProgress, 1000);
 
     return () => clearInterval(interval);
   }, []);
 
-  // Check for reset every minute
+  // Auto reset functionality
   useEffect(() => {
-    checkForWeeklyReset();
-    const interval = setInterval(checkForWeeklyReset, 60000);
-    return () => clearInterval(interval);
-  }, [checkForWeeklyReset]);
+    const checkForAutoReset = () => {
+      const now = new Date();
+      const today = now.toDateString();
+      
+      if (isTimeForWeeklyReset() && lastResetDate !== today) {
+        handleReset(true);
+      }
+    };
 
-  const handleTaskToggle = (taskId: string) => {
-    setCompletedTasks((prev: TaskCompletionState) => ({
+    const interval = setInterval(checkForAutoReset, 60000); // Check every minute
+    checkForAutoReset(); // Check immediately
+
+    return () => clearInterval(interval);
+  }, [lastResetDate]);
+
+  const handleReset = useCallback((isAutoReset = false) => {
+    setIsResetting(true);
+    
+    const allTaskIds = getAllTaskIds();
+    const resetState: TaskCompletionState = {};
+    
+    allTaskIds.forEach(taskId => {
+      resetState[taskId] = false;
+    });
+
+    setCompletedTasks(resetState);
+    setLastResetDate(new Date().toDateString());
+    
+    // Show visual feedback for manual reset
+    if (!isAutoReset) {
+      setTimeout(() => setIsResetting(false), 1000);
+    } else {
+      setIsResetting(false);
+    }
+  }, [setCompletedTasks, setLastResetDate]);
+
+  const handleTaskToggle = useCallback((taskId: string) => {
+    setCompletedTasks(prev => ({
       ...prev,
       [taskId]: !prev[taskId]
     }));
-  };
+  }, [setCompletedTasks]);
 
-  const handleManualReset = async () => {
-    setIsResetting(true);
-    
-    // Simulate async operation for better UX
-    setTimeout(() => {
-      setCompletedTasks({});
-      setLastResetCheck(new Date().toISOString().split('T')[0]);
-      setIsResetting(false);
-    }, 1000);
-  };
+  const days: WeekDay[] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
-  const getProgressColor = (progress: number) => {
-    if (progress >= 80) return 'text-green-600 dark:text-green-400';
-    if (progress >= 60) return 'text-blue-600 dark:text-blue-400';
-    if (progress >= 40) return 'text-yellow-600 dark:text-yellow-400';
-    return 'text-red-600 dark:text-red-400';
-  };
-
-  const getProgressBgColor = (progress: number) => {
-    if (progress >= 80) return 'bg-green-500';
-    if (progress >= 60) return 'bg-blue-500';
-    if (progress >= 40) return 'bg-yellow-500';
-    return 'bg-red-500';
-  };
-
-  const daysOrder: WeekDay[] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  // Calculate overall progress
+  const allTasks = Object.values(routine).flat();
+  const completedCount = allTasks.filter(task => completedTasks[task.id]).length;
+  const totalTasks = allTasks.length;
+  const overallProgress = totalTasks > 0 ? (completedCount / totalTasks) * 100 : 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 p-4">
-      <div className="max-w-7xl mx-auto space-y-6">
-        
-        {/* Header */}
-        <div className="text-center space-y-4">
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white">
-            Weekly Routine Manager
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400 text-lg">
-            Stay organized and track your daily progress
-          </p>
+    <div className="max-w-7xl mx-auto p-6 space-y-6">
+      {/* Header with Clock and Stats */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <div className="lg:col-span-2">
+          <Clock className="w-full" />
         </div>
-
-        {/* Top Stats and Controls */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          
-          {/* Live Clock */}
-          <Clock className="lg:col-span-1" />
+        <div className="space-y-4">
+          <ResetButton onReset={() => handleReset(false)} isResetting={isResetting} />
           
           {/* Overall Progress */}
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center space-x-2">
-                <Trophy className="w-6 h-6 text-yellow-600" />
-                <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
-                  Overall Progress
-                </h2>
-              </div>
-              <span className="text-2xl">🎯</span>
-            </div>
-            
+          <div className="bg-gradient-to-br from-green-50 to-emerald-100 dark:from-gray-800 dark:to-gray-900 p-6 rounded-2xl shadow-lg border border-green-200 dark:border-gray-700">
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
+              Weekly Progress
+            </h3>
             <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-3xl font-bold text-gray-900 dark:text-white">
-                  {overallProgress.toFixed(1)}%
-                </span>
-                <span className="text-sm text-gray-600 dark:text-gray-400">
-                  {completedCount}/{totalTasks} tasks
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600 dark:text-gray-400">Tasks Completed</span>
+                <span className="font-medium text-gray-800 dark:text-gray-200">
+                  {completedCount}/{totalTasks}
                 </span>
               </div>
-              
-              <div className="bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+              <div className="bg-white/50 dark:bg-gray-700 rounded-full h-3">
                 <div 
-                  className={`${getProgressBgColor(overallProgress)} rounded-full h-3 transition-all duration-700 ease-out`}
+                  className="bg-gradient-to-r from-green-500 to-emerald-500 rounded-full h-3 transition-all duration-500 ease-out"
                   style={{ width: `${overallProgress}%` }}
                 ></div>
               </div>
-              
-              <div className={`text-sm font-medium ${getProgressColor(overallProgress)}`}>
-                {overallProgress >= 80 ? 'Excellent!' : 
-                 overallProgress >= 60 ? 'Good progress!' : 
-                 overallProgress >= 40 ? 'Keep going!' : 'Just getting started!'}
-              </div>
-            </div>
-          </div>
-
-          {/* Week Progress & Reset */}
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center space-x-2">
-                <TrendingUp className="w-6 h-6 text-purple-600" />
-                <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
-                  Week Progress
-                </h2>
-              </div>
-            </div>
-            
-            <div className="space-y-4">
               <div className="text-center">
-                <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-                  {weekProgress.toFixed(1)}%
+                <span className="text-2xl font-bold text-green-600 dark:text-green-400">
+                  {overallProgress.toFixed(1)}%
+                </span>
+              </div>
+              
+              {/* Week Timeline */}
+              <div className="mt-4 pt-4 border-t border-green-200 dark:border-gray-600">
+                <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-2">
+                  <span>Week Progress</span>
+                  <span>{weekProgress.toFixed(1)}%</span>
                 </div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">
-                  Week Complete
+                <div className="bg-white/50 dark:bg-gray-700 rounded-full h-2">
+                  <div 
+                    className="bg-gradient-to-r from-blue-400 to-blue-500 rounded-full h-2 transition-all duration-300"
+                    style={{ width: `${weekProgress}%` }}
+                  ></div>
                 </div>
               </div>
-              
-              <div className="bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                <div 
-                  className="bg-purple-500 rounded-full h-2 transition-all duration-500"
-                  style={{ width: `${weekProgress}%` }}
-                ></div>
-              </div>
-              
-              <div className="text-xs text-center text-gray-500 dark:text-gray-400">
-                Next reset: {getNextResetTime()}
-              </div>
-              
-              <ResetButton onReset={handleManualReset} isResetting={isResetting} />
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Days Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
-          {daysOrder.map((day) => (
-            <DaySchedule
-              key={day}
-              day={day}
-              tasks={routine[day]}
-              completedTasks={completedTasks}
-              onTaskToggle={handleTaskToggle}
-              isCurrentDay={day === currentDay}
-            />
-          ))}
+      {/* Weekly Schedule Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
+        {days.map((day) => (
+          <DaySchedule
+            key={day}
+            day={day}
+            tasks={routine[day]}
+            completedTasks={completedTasks}
+            onTaskToggle={handleTaskToggle}
+            isCurrentDay={day === currentDay}
+          />
+        ))}
+      </div>
+
+      {/* Footer */}
+      <div className="text-center py-8">
+        <div className="text-sm text-gray-500 dark:text-gray-400">
+          Routine automatically resets every Sunday at 12:01 AM
         </div>
-
-        {/* Footer */}
-        <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-          <p className="text-sm">
-            Routine automatically resets every Sunday at 12:01 AM
-          </p>
-          <p className="text-xs mt-2">
-            Built with Next.js, TypeScript & Tailwind CSS
-          </p>
+        <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+          Stay consistent, stay productive! 🚀
         </div>
       </div>
     </div>
