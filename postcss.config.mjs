@@ -1,4 +1,4 @@
-// postcss.config.js
+// postcss.config.mjs
 const config = {
   plugins: {
     tailwindcss: {},
@@ -6,4 +6,4 @@ const config = {
   },
 }
 
-module.exports = config
+export default config
