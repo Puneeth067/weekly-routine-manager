@@ -151,7 +151,7 @@ const WeeklyPlanner: React.FC<WeeklyPlannerProps> = ({ routine }) => {
               <h1 className={`font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent transition-all duration-300 ${
                 isScrolled ? 'text-lg' : 'text-2xl'
               }`}>
-                Puneeth&apos;s Weekly Routine
+                Weekly Routine
               </h1>
               {isScrolled && (
                 <div className="text-sm text-gray-600 dark:text-gray-400">
