@@ -307,7 +307,7 @@ const WeeklyPlanner: React.FC<WeeklyPlannerProps> = ({ routine }) => {
           {/* Footer */}
           <div className="text-center py-8">
             <div className="text-sm text-gray-500 dark:text-gray-400">
-              Routine automatically resets every Sunday at 12:01 AM
+              Routine automatically resets every every week
             </div>
             <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">
               Stay consistent, stay productive! 🚀
