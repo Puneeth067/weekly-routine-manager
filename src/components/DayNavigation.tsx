@@ -1,19 +1,14 @@
 // src/components/DayNavigation.tsx
 'use client';
 
-import { WeekDay } from '@/types';
-
-interface Task {
-  id: string;
-  [key: string]: unknown;
-}
+import { WeekDay, WeeklyRoutine } from '@/types';
 
 interface DayNavigationProps {
   currentDay: WeekDay;
   onDayClick: (day: WeekDay) => void;
   completedTasks: Record<string, boolean>;
-  routine: Record<WeekDay, Task[]>;
-}
+  routine: WeeklyRoutine;
+}gi 
 
 const DayNavigation: React.FC<DayNavigationProps> = ({
   currentDay,

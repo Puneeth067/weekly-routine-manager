@@ -1,12 +1,13 @@
 // src/components/WeeklyPlanner.tsx
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { WeeklyPlannerProps, TaskCompletionState, WeekDay } from '@/types';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { getCurrentDay, isTimeForWeeklyReset, getWeekProgress } from '@/utils/dateUtils';
 import { getAllTaskIds } from '@/data/routineData';
 import DaySchedule from './DaySchedule';
+import DayNavigation from './DayNavigation';
 import ResetButton from './ResetButton';
 import Clock from './Clock';
 import StudyRoadmap from './StudyRoadmap';
@@ -25,6 +26,17 @@ const WeeklyPlanner: React.FC<WeeklyPlannerProps> = ({ routine }) => {
   const [currentDay, setCurrentDay] = useState<WeekDay>('Monday');
   const [weekProgress, setWeekProgress] = useState(0);
   const [isResetting, setIsResetting] = useState(false);
+
+  // Refs for day schedule cards to enable smooth scrolling
+  const dayRefs = useRef<Record<WeekDay, HTMLDivElement | null>>({
+    Sunday: null,
+    Monday: null,
+    Tuesday: null,
+    Wednesday: null,
+    Thursday: null,
+    Friday: null,
+    Saturday: null,
+  });
 
   // Update current day and week progress
   useEffect(() => {
@@ -83,6 +95,24 @@ const WeeklyPlanner: React.FC<WeeklyPlannerProps> = ({ routine }) => {
       [taskId]: !prev[taskId]
     }));
   }, [setCompletedTasks]);
+
+  // Handle day navigation click with smooth scrolling
+  const handleDayClick = useCallback((day: WeekDay) => {
+    const dayElement = dayRefs.current[day];
+    if (dayElement) {
+      dayElement.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+        inline: 'nearest'
+      });
+      
+      // Add a subtle highlight effect
+      dayElement.classList.add('animate-pulse');
+      setTimeout(() => {
+        dayElement.classList.remove('animate-pulse');
+      }, 1000);
+    }
+  }, []);
 
   const days: WeekDay[] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
@@ -144,20 +174,35 @@ const WeeklyPlanner: React.FC<WeeklyPlannerProps> = ({ routine }) => {
         </div>
       </div>
 
+      {/* Day Navigation */}
+      <DayNavigation
+        currentDay={currentDay}
+        onDayClick={handleDayClick}
+        completedTasks={completedTasks}
+        routine={routine}
+      />
+
       {/* Study Roadmap Section */}
       <StudyRoadmap />
 
       {/* Weekly Schedule Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
         {days.map((day) => (
-          <DaySchedule
+          <div
             key={day}
-            day={day}
-            tasks={routine[day]}
-            completedTasks={completedTasks}
-            onTaskToggle={handleTaskToggle}
-            isCurrentDay={day === currentDay}
-          />
+            ref={(el) => {
+              dayRefs.current[day] = el;
+            }}
+            className="transition-all duration-300"
+          >
+            <DaySchedule
+              day={day}
+              tasks={routine[day]}
+              completedTasks={completedTasks}
+              onTaskToggle={handleTaskToggle}
+              isCurrentDay={day === currentDay}
+            />
+          </div>
         ))}
       </div>
 
