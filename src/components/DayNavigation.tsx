@@ -3,11 +3,16 @@
 
 import { WeekDay } from '@/types';
 
+interface Task {
+  id: string;
+  [key: string]: unknown;
+}
+
 interface DayNavigationProps {
   currentDay: WeekDay;
   onDayClick: (day: WeekDay) => void;
   completedTasks: Record<string, boolean>;
-  routine: Record<WeekDay, any[]>;
+  routine: Record<WeekDay, Task[]>;
 }
 
 const DayNavigation: React.FC<DayNavigationProps> = ({
