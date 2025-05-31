@@ -8,7 +8,7 @@ interface DayNavigationProps {
   onDayClick: (day: WeekDay) => void;
   completedTasks: Record<string, boolean>;
   routine: WeeklyRoutine;
-}gi 
+}
 
 const DayNavigation: React.FC<DayNavigationProps> = ({
   currentDay,
